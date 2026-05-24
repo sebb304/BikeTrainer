@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect, use } from "react";
 import type { Interval } from "./types/workout";
 
 function App() {
   const [power, setPower] = useState(200);
   const [duration, setDuration] = useState(5);
   const [intervals, setIntervals] = useState<Interval[]>([]);
+  const [currentIntervalIndex, setCurrentIntervalIndex] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
 
   const addInterval = () => {
     const newInterval: Interval = {
@@ -22,6 +25,38 @@ function App() {
 
     setIntervals(updatedIntervals);
   };
+
+  const startWorkout = () => {
+    if (intervals.length === 0) return;
+
+    setCurrentIntervalIndex(0);
+    setTimeRemaining(intervals[0].duration * 60);
+    setIsRunning(true);
+  }
+
+  useEffect(() => {
+    if (!isRunning) return;
+    
+    const timer = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev > 1) {
+          return prev - 1;
+        } 
+        
+        const nextIndex = currentIntervalIndex + 1;
+        if (nextIndex < intervals.length) {
+          setCurrentIntervalIndex(nextIndex);
+          return intervals[nextIndex].duration * 60;
+        }
+        
+        setIsRunning(false);
+        return 0;
+
+      });
+    } , 1000); 
+    return () => clearInterval(timer);
+  }, [isRunning, currentIntervalIndex, intervals]);
+
 
   return (
     <div
@@ -107,6 +142,28 @@ function App() {
               </button>
             </div>
           ))
+        )}
+      </div>
+      <div 
+        style={{
+          border: "1px solid gray",
+          padding: "1rem",
+          marginTop: "1rem",
+        }}
+      >
+        <h2>Workout</h2>
+        <button onClick={startWorkout}>
+          Start Workout
+        </button>
+        {isRunning && (
+          <div style={{ marginTop: "1rem" }}>
+            <h3>Interval {currentIntervalIndex + 1}</h3>
+            <p>
+              Target Power:{" "}
+              {intervals[currentIntervalIndex]?.power}W
+            </p>
+            <p>Time Remaining: {timeRemaining}s</p>
+          </div>
         )}
       </div>
     </div>
